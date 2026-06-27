@@ -38,3 +38,27 @@ def pressure_loss_per_meter(
     re = reynolds(velocity, diameter, kinematic_viscosity)
     f = colebrook_white(re, roughness / diameter)
     return f * (1.0 / diameter) * (density * velocity ** 2) / 2.0  # Pa/m
+
+def solve_diameter_for_friction(
+        flow_rate: float, target_pa_par_m: float,
+        density: float, kinematic_viscosity: float, roughness: float,
+        d_min: float = 0.03, d_max: float = 3.0, tol: float = 1e-6) -> float:
+    """ Diametro [m] que produce la perdida objetivo (metodo de friccion constante),
+    por biseccion. Aprovecha que Δp/L decrece monótonamente con D."""
+    def residual(diameter: float) -> float:
+        return pressure_loss_per_meter(flow_rate, diameter, density, kinematic_viscosity, roughness) - target_pa_par_m
+    
+    lo, hi = d_min, d_max
+    f_lo, f_hi = residual(lo), residual(hi)
+    if f_lo * f_hi > 0:
+        raise ValueError("No se puede encontrar un diametro en el rango dado que cumpla la perdida objetivo.")
+    for _ in range(100):
+        mid = (lo + hi) / 2.0
+        f_mid = residual(mid)
+        if abs(f_mid) < tol or hi - lo < tol:
+            return mid
+        if f_lo * f_mid < 0:
+            hi = mid
+        else:
+            lo, f_lo = mid, f_mid
+    return (lo + hi) / 2.0  # Mejor estimacion final

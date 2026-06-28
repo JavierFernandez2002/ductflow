@@ -20,7 +20,7 @@ app.add_middleware(
 def round_sizes(req: SizingRequest):
     try:
         result = size_round_duct(
-            DuctSizingInput(req.flow_rate_ms, req.target_pa_per_m, req.air_temp_c)
+            DuctSizingInput(req.flow_rate_m3s, req.target_pa_per_m, req.air_temp_c)
         )
     except ValueError as a:
         raise HTTPException(status_code=422, detail=str(a))
